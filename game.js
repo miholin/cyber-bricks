@@ -2,11 +2,18 @@
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
+// Dodane spremenljivke za premikajočo se črto
+var lineX = 0;
+var lineSpeed = 2;
+
 // Žogica
 var ballRadius = 10;
 var x, y;
 var dx, dy;
 var ballSpeed = 2;  // začetna hitrost (nastavi se glede na težavnost)
+
+// Dodana nova spremenljivka za hitrost ploščice (paddle)
+var paddleSpeed = 5;  // privzeta hitrost ploščice, sedaj počasnejša
 
 // Ploščica
 var paddleWidth = 75;
@@ -42,7 +49,6 @@ function initBricks() {
   for (var c = 0; c < brickColumnCount; c++) {
     bricks[c] = [];
     for (var r = 0; r < brickRowCount; r++) {
-      // Bonus opeka: 20% verjetnost
       var isBonus = (Math.random() < 0.2);
       bricks[c][r] = { x: 0, y: 0, status: 1, bonus: isBonus };
     }
@@ -58,7 +64,6 @@ function drawBricks() {
         var brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
-        // Bonus opeke pobarvamo zlato, ostale modro
         ctx.fillStyle = bricks[c][r].bonus ? "#FFD700" : "#0095DD";
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
@@ -69,22 +74,38 @@ function drawBricks() {
   }
 }
 
-// Risanje žogice
+// Risanje bele žogice
 function drawBall() {
   ctx.beginPath();
   ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-  ctx.fillStyle = "#333333";
+  ctx.fillStyle = "#fff";  // Bela barva
   ctx.fill();
   ctx.closePath();
 }
 
-// Risanje ploščice
+// Risanje bele ploščice
 function drawPaddle() {
   ctx.beginPath();
   ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-  ctx.fillStyle = "#000000";
+  ctx.fillStyle = "#fff"; // Bela barva
   ctx.fill();
   ctx.closePath();
+}
+
+// Risanje premikajoče se bele črte
+function drawMovingLine() {
+  ctx.beginPath();
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.moveTo(lineX, 0);
+  ctx.lineTo(lineX, canvas.height);
+  ctx.stroke();
+  ctx.closePath();
+
+  lineX += lineSpeed;
+  if (lineX > canvas.width) {
+    lineX = 0;
+  }
 }
 
 // Prikaz točk
@@ -109,10 +130,8 @@ function collisionDetection() {
         if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
           dy = -dy;
           b.status = 0;
-          // Bonus opeka prinese 5 točk, navadna 1 točko
           score += b.bonus ? 5 : 1;
           drawScore();
-          // Če so vse opeke uničene, preide na naslednji nivo
           if (allBricksCleared()) {
             levelUp();
           }
@@ -122,7 +141,6 @@ function collisionDetection() {
   }
 }
 
-// Preveri, če so vse opeke uničene
 function allBricksCleared() {
   for (var c = 0; c < brickColumnCount; c++) {
     for (var r = 0; r < brickRowCount; r++) {
@@ -134,7 +152,6 @@ function allBricksCleared() {
   return true;
 }
 
-// Prehod na naslednji nivo z uporabo SweetAlert2
 function levelUp() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
@@ -146,7 +163,6 @@ function levelUp() {
   }).then(() => {
     level++;
     $("#level").html(level);
-    // Povečaj hitrost žogice glede na težavnost
     ballSpeed += 1;
     initGameVariables();
     initBricks();
@@ -155,7 +171,6 @@ function levelUp() {
   });
 }
 
-// Inicializacija vseh spremenljivk igre
 function initGameVariables() {
   x = canvas.width / 2;
   y = canvas.height - 30;
@@ -169,22 +184,20 @@ function initGameVariables() {
   $("#level").html(level);
 }
 
-// Glavna risalna funkcija (game loop)
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawMovingLine();
   drawBricks();
   drawBall();
   drawPaddle();
   collisionDetection();
 
-  // Odboj od sten
   if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
     dx = -dx;
   }
   if (y + dy < ballRadius) {
     dy = -dy;
   } else if (y + dy > canvas.height - ballRadius) {
-    // Preveri, če je žogica zadela ploščico
     if (x > paddleX && x < paddleX + paddleWidth) {
       var deltaX = x - (paddleX + paddleWidth / 2);
       dx = deltaX * 0.15;
@@ -197,15 +210,14 @@ function draw() {
   x += dx;
   y += dy;
 
-  // Premikanje ploščice
+  // Uporaba spremenljivke paddleSpeed za počasnejše premikanje ploščice
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
-    paddleX += 7;
+    paddleX += paddleSpeed;
   } else if (leftPressed && paddleX > 0) {
-    paddleX -= 7;
+    paddleX -= paddleSpeed;
   }
 }
 
-// Funkcija za konec igre z uporabo SweetAlert2
 function gameOver() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
@@ -224,7 +236,6 @@ function gameOver() {
   });
 }
 
-// Dogodki tipkovnice
 document.addEventListener("keydown", function(e) {
   if (e.keyCode == 39) rightPressed = true;
   else if (e.keyCode == 37) leftPressed = true;
@@ -235,7 +246,6 @@ document.addEventListener("keyup", function(e) {
   else if (e.keyCode == 37) leftPressed = false;
 }, false);
 
-// Gumbi za zagon, pavzo in ponastavitev igre
 $("#startBtn").click(function() {
   if (!isPlaying) {
     isPlaying = true;
@@ -272,7 +282,6 @@ $("#resetBtn").click(function() {
   $("#pauseBtn").text("Pavza");
 });
 
-// Funkcija za izbiro težavnosti z uporabo SweetAlert2
 function chooseDifficulty() {
   Swal.fire({
     title: 'Izberi težavnost',
@@ -288,13 +297,17 @@ function chooseDifficulty() {
   }).then((result) => {
     if (result.value) {
       var diff = result.value;
+      // Nastavi hitrost žogice glede na težavnost
       if(diff === 'easy'){
-        ballSpeed = 2;
+        ballSpeed = 1.5; // počasnejša hitrost za enostavno
       } else if(diff === 'medium'){
-        ballSpeed = 4;
+        ballSpeed = 2.5;
       } else if(diff === 'hard'){
-        ballSpeed = 6;
+        ballSpeed = 3.5;
       }
+      // Paddle hitrost naj bo na splošno počasnejša
+      paddleSpeed = 5;
+      
       Swal.fire({
         title: 'Težavnost nastavljena!',
         text: 'Izbrana težavnost: ' + (diff === 'easy' ? 'Enostavno' : diff === 'medium' ? 'Srednje' : 'Težko'),
@@ -306,7 +319,6 @@ function chooseDifficulty() {
   });
 }
 
-// Ob nalaganju strani izberi težavnost
 $(document).ready(function() {
    chooseDifficulty();
 });
