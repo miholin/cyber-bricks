@@ -2,7 +2,7 @@
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
-// Dodane spremenljivke za premikajočo se črto
+// Črta
 var lineX = 0;
 var lineSpeed = 2;
 
@@ -10,15 +10,16 @@ var lineSpeed = 2;
 var ballRadius = 10;
 var x, y;
 var dx, dy;
-var ballSpeed = 2;  // začetna hitrost (nastavi se glede na težavnost)
-
-// Dodana nova spremenljivka za hitrost ploščice (paddle)
-var paddleSpeed = 5;  // privzeta hitrost ploščice, sedaj počasnejša
+// Privzeto nastavimo "medium" => 2.5
+var ballSpeed = 2.5;
 
 // Ploščica
 var paddleWidth = 75;
 var paddleHeight = 10;
 var paddleX;
+var paddleSpeed = 5;
+
+// Tipke levo/desno
 var rightPressed = false;
 var leftPressed = false;
 
@@ -32,16 +33,16 @@ var brickOffsetTop = 30;
 var brickOffsetLeft = 30;
 var bricks = [];
 
-// Timer, točke in nivo
+// Rezultat, čas, nivo
 var score = 0;
 var seconds = 0;
 var level = 1;
 var timerInterval, gameInterval;
 var isPlaying = false;
 
-// Najboljši rezultat shranjen v localStorage
+// High score
 var highScore = localStorage.getItem("highScore") || 0;
-$("#highScore").html(highScore);
+$("#highScore").text(highScore);
 
 // Inicializacija opek
 function initBricks() {
@@ -59,12 +60,13 @@ function initBricks() {
 function drawBricks() {
   for (var c = 0; c < brickColumnCount; c++) {
     for (var r = 0; r < brickRowCount; r++) {
-      if (bricks[c][r].status == 1) {
+      var b = bricks[c][r];
+      if (b.status == 1) {
         var brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
         var brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
-        bricks[c][r].x = brickX;
-        bricks[c][r].y = brickY;
-        ctx.fillStyle = bricks[c][r].bonus ? "#FFD700" : "#0095DD";
+        b.x = brickX;
+        b.y = brickY;
+        ctx.fillStyle = b.bonus ? "#FFD700" : "#0095DD";
         ctx.beginPath();
         ctx.rect(brickX, brickY, brickWidth, brickHeight);
         ctx.fill();
@@ -74,25 +76,25 @@ function drawBricks() {
   }
 }
 
-// Risanje bele žogice
+// Risanje žogice
 function drawBall() {
   ctx.beginPath();
   ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-  ctx.fillStyle = "#fff";  // Bela barva
+  ctx.fillStyle = "#fff";
   ctx.fill();
   ctx.closePath();
 }
 
-// Risanje bele ploščice
+// Risanje ploščice
 function drawPaddle() {
   ctx.beginPath();
   ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-  ctx.fillStyle = "#fff"; // Bela barva
+  ctx.fillStyle = "#fff";
   ctx.fill();
   ctx.closePath();
 }
 
-// Risanje premikajoče se bele črte
+// Risanje premikajoče se črte
 function drawMovingLine() {
   ctx.beginPath();
   ctx.strokeStyle = "#fff";
@@ -108,30 +110,31 @@ function drawMovingLine() {
   }
 }
 
-// Prikaz točk
-function drawScore() {
-  $("#score").html(score);
-}
-
-// Timer funkcija
+// Timer
 function updateTimer() {
   seconds++;
   var sec = seconds % 60;
   var min = Math.floor(seconds / 60);
-  $("#timer").html((min < 10 ? "0" + min : min) + ":" + (sec < 10 ? "0" + sec : sec));
+  $("#timer").text(
+    (min < 10 ? "0" + min : min) + ":" + (sec < 10 ? "0" + sec : sec)
+  );
 }
 
-// Collision detection za opeke
+// Porušene opeke?
 function collisionDetection() {
   for (var c = 0; c < brickColumnCount; c++) {
     for (var r = 0; r < brickRowCount; r++) {
       var b = bricks[c][r];
       if (b.status == 1) {
-        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+        if (
+          x > b.x && x < b.x + brickWidth &&
+          y > b.y && y < b.y + brickHeight
+        ) {
           dy = -dy;
           b.status = 0;
           score += b.bonus ? 5 : 1;
-          drawScore();
+          $("#score").text(score);
+
           if (allBricksCleared()) {
             levelUp();
           }
@@ -155,14 +158,16 @@ function allBricksCleared() {
 function levelUp() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
+
   Swal.fire({
-    title: 'Nivo ' + level + ' zaključen!',
-    text: 'Nadaljujemo na naslednjem nivoju.',
-    icon: 'success',
-    confirmButtonText: 'Naprej'
+    title: "Nivo " + level + " zaključen!",
+    text: "Nadaljujemo na naslednjem nivoju.",
+    icon: "success",
+    confirmButtonText: "Naprej"
   }).then(() => {
     level++;
-    $("#level").html(level);
+    $("#level").text(level);
+    // Malo povišamo ballSpeed, a težavnost se ne da spreminjat med igro.
     ballSpeed += 1;
     initGameVariables();
     initBricks();
@@ -174,30 +179,35 @@ function levelUp() {
 function initGameVariables() {
   x = canvas.width / 2;
   y = canvas.height - 30;
-  dx = ballSpeed;
+  dx = Math.random() < 0.5 ? -ballSpeed : ballSpeed;
   dy = -ballSpeed;
   paddleX = (canvas.width - paddleWidth) / 2;
   score = 0;
   seconds = 0;
-  $("#score").html(score);
-  $("#timer").html("00:00");
-  $("#level").html(level);
+  $("#score").text(score);
+  $("#timer").text("00:00");
+  $("#level").text(level);
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   drawMovingLine();
   drawBricks();
   drawBall();
   drawPaddle();
   collisionDetection();
 
+  // Odbijanje od stranskih robov
   if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
     dx = -dx;
   }
+  // Zgornji rob
   if (y + dy < ballRadius) {
     dy = -dy;
-  } else if (y + dy > canvas.height - ballRadius) {
+  } 
+  // Spodnji rob => ali udari ploščico ali je konec igre
+  else if (y + dy > canvas.height - ballRadius) {
     if (x > paddleX && x < paddleX + paddleWidth) {
       var deltaX = x - (paddleX + paddleWidth / 2);
       dx = deltaX * 0.15;
@@ -210,7 +220,7 @@ function draw() {
   x += dx;
   y += dy;
 
-  // Uporaba spremenljivke paddleSpeed za počasnejše premikanje ploščice
+  // Ploščica levo/desno
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
     paddleX += paddleSpeed;
   } else if (leftPressed && paddleX > 0) {
@@ -221,34 +231,68 @@ function draw() {
 function gameOver() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
+
+  // Posodobimo highscore
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("highScore", highScore);
+    $("#highScore").text(highScore);
+  }
+  
   Swal.fire({
-    title: 'Igra je končana!',
+    title: "Igra je končana!",
     text: "Tvoj rezultat: " + score,
-    icon: 'error',
-    confirmButtonText: 'Igraj znova'
+    icon: "error",
+    confirmButtonText: "Ok"
   }).then(() => {
-    if (score > highScore) {
-      highScore = score;
-      localStorage.setItem("highScore", highScore);
-      $("#highScore").html(highScore);
-    }
+    // Samodejno "ponastavi" igro
     isPlaying = false;
+    
+    // Ponastavimo na začetek
+    level = 1;
+    $("#level").text(level);
+
+    // Začetni ballSpeed je odvisen od izbrane težavnosti
+    var diff = $("#difficultySelect").val();
+    if (diff === "easy") {
+      ballSpeed = 1.5;
+    } else if (diff === "medium") {
+      ballSpeed = 2.5;
+    } else if (diff === "hard") {
+      ballSpeed = 3.5;
+    }
+
+    initGameVariables();
+    initBricks();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Spet pokažemo gumb ZAČNI in dovolimo spremembo težavnosti
+    $("#startBtn").show();
+    $("#difficultySelect").attr("disabled", false);
   });
 }
 
+// Tipkovni dogodki
 document.addEventListener("keydown", function(e) {
-  if (e.keyCode == 39) rightPressed = true;
-  else if (e.keyCode == 37) leftPressed = true;
+  if (e.keyCode === 39) rightPressed = true;
+  else if (e.keyCode === 37) leftPressed = true;
 }, false);
 
 document.addEventListener("keyup", function(e) {
-  if (e.keyCode == 39) rightPressed = false;
-  else if (e.keyCode == 37) leftPressed = false;
+  if (e.keyCode === 39) rightPressed = false;
+  else if (e.keyCode === 37) leftPressed = false;
 }, false);
 
+// Po kliku ZAČNI
 $("#startBtn").click(function() {
   if (!isPlaying) {
     isPlaying = true;
+
+    // Skrijemo gumb, onemogočimo težavnost
+    $("#startBtn").hide();
+    $("#difficultySelect").attr("disabled", true);
+
+    // Reset in začetek
     initGameVariables();
     initBricks();
     gameInterval = setInterval(draw, 10);
@@ -256,6 +300,7 @@ $("#startBtn").click(function() {
   }
 });
 
+// PAVZA
 $("#pauseBtn").click(function() {
   if (isPlaying) {
     clearInterval(gameInterval);
@@ -270,55 +315,29 @@ $("#pauseBtn").click(function() {
   }
 });
 
-$("#resetBtn").click(function() {
-  clearInterval(gameInterval);
-  clearInterval(timerInterval);
-  isPlaying = false;
-  level = 1;
-  ballSpeed = 2;
-  initGameVariables();
-  initBricks();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  $("#pauseBtn").text("Pavza");
+// Spreminjanje težavnosti (le izven igre)
+$("#difficultySelect").change(function() {
+  // Uporabnik lahko spremeni, vendar samo če ne igra
+  if (!isPlaying) {
+    var diff = $(this).val();
+    if (diff === "easy") {
+      ballSpeed = 1.5;
+    } else if (diff === "medium") {
+      ballSpeed = 2.5;
+    } else if (diff === "hard") {
+      ballSpeed = 3.5;
+    }
+  } else {
+    // Če je igra v teku, ga ignoriramo ali pa spet omogočimo?
+    // Mi bomo kar ignorirali spremembo:
+    $(this).val(
+      ballSpeed === 1.5 ? "easy" : ballSpeed === 2.5 ? "medium" : "hard"
+    );
+  }
 });
 
-function chooseDifficulty() {
-  Swal.fire({
-    title: 'Izberi težavnost',
-    input: 'select',
-    inputOptions: {
-      easy: 'Enostavno',
-      medium: 'Srednje',
-      hard: 'Težko'
-    },
-    inputPlaceholder: 'Izberi težavnost',
-    showCancelButton: false,
-    confirmButtonText: 'Izberi'
-  }).then((result) => {
-    if (result.value) {
-      var diff = result.value;
-      // Nastavi hitrost žogice glede na težavnost
-      if(diff === 'easy'){
-        ballSpeed = 1.5; // počasnejša hitrost za enostavno
-      } else if(diff === 'medium'){
-        ballSpeed = 2.5;
-      } else if(diff === 'hard'){
-        ballSpeed = 3.5;
-      }
-      // Paddle hitrost naj bo na splošno počasnejša
-      paddleSpeed = 5;
-      
-      Swal.fire({
-        title: 'Težavnost nastavljena!',
-        text: 'Izbrana težavnost: ' + (diff === 'easy' ? 'Enostavno' : diff === 'medium' ? 'Srednje' : 'Težko'),
-        icon: 'info',
-        timer: 1500,
-        showConfirmButton: false
-      });
-    }
-  });
-}
-
+// Ko se dokument naloži
 $(document).ready(function() {
-   chooseDifficulty();
+  // Nič posebnega, ker je medium že default v HTML
+  // ballSpeed = 2.5 (ustrezno)
 });

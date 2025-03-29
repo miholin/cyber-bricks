@@ -1,4 +1,3 @@
-/* Reset in odstranitev scrollbara */
 html, body {
   margin: 0;
   padding: 0;
@@ -7,13 +6,13 @@ html, body {
   background: #0d0d0d;
 }
 
-/* Uporaba cyber fonta */
+/* Cyber font */
 body { 
   font-family: 'Orbitron', sans-serif; 
   text-align: center; 
   padding: 20px;
   color: #fff;
-  /* Neonski gradient ozadje z animacijo */
+  /* Neonski gradient ozadje */
   background: linear-gradient(135deg, #141e30, #243b55);
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
@@ -42,13 +41,12 @@ body {
   margin: 10px 0;
 }
 
-/* Info panel */
 .info { 
   margin: 10px 0; 
   font-size: 18px; 
 }
 
-/* Stil za canvas, temna "arcade" podlaga */
+/* Platno */
 canvas { 
   background: #111; 
   display: block; 
@@ -57,7 +55,7 @@ canvas {
   box-shadow: 0 0 20px #0ff;
 }
 
-/* Gumbi s cyber učinki */
+/* Gumbi */
 button { 
   margin: 5px; 
   padding: 8px 16px; 
