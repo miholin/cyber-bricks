@@ -25,12 +25,12 @@ var leftPressed = false;
 
 // Opeke
 var brickRowCount = 3;
-var brickColumnCount = 5;
 var brickWidth = 75;
 var brickHeight = 20;
 var brickPadding = 10;
 var brickOffsetTop = 30;
 var brickOffsetLeft = 30;
+var brickColumnCount = Math.floor((canvas.width - 2 * brickOffsetLeft + brickPadding) / (brickWidth + brickPadding)); // Preveri širino in robove
 var bricks = [];
 
 // Rezultat, čas, nivo
@@ -167,7 +167,7 @@ function levelUp() {
   }).then(() => {
     level++;
     $("#level").text(level);
-    // Malo povišamo ballSpeed, a težavnost se ne da spreminjat med igro.
+    // Malo povišamo ballSpeed
     ballSpeed += 1;
     initGameVariables();
     initBricks();
@@ -238,7 +238,7 @@ function gameOver() {
     localStorage.setItem("highScore", highScore);
     $("#highScore").text(highScore);
   }
-  
+
   Swal.fire({
     title: "Igra je končana!",
     text: "Tvoj rezultat: " + score,
@@ -283,61 +283,21 @@ document.addEventListener("keyup", function(e) {
   else if (e.keyCode === 37) leftPressed = false;
 }, false);
 
-// Po kliku ZAČNI
+// Začetek igre
 $("#startBtn").click(function() {
   if (!isPlaying) {
     isPlaying = true;
 
-    // Skrijemo gumb, onemogočimo težavnost
-    $("#startBtn").hide();
+    // Skrij gumb ZAČNI
+    $(this).hide();
+
+    // Onemogoči izbiro težavnosti
     $("#difficultySelect").attr("disabled", true);
 
-    // Reset in začetek
     initGameVariables();
     initBricks();
+
     gameInterval = setInterval(draw, 10);
     timerInterval = setInterval(updateTimer, 1000);
   }
-});
-
-// PAVZA
-$("#pauseBtn").click(function() {
-  if (isPlaying) {
-    clearInterval(gameInterval);
-    clearInterval(timerInterval);
-    isPlaying = false;
-    $("#pauseBtn").text("Nadaljuj");
-  } else {
-    isPlaying = true;
-    gameInterval = setInterval(draw, 10);
-    timerInterval = setInterval(updateTimer, 1000);
-    $("#pauseBtn").text("Pavza");
-  }
-});
-
-// Spreminjanje težavnosti (le izven igre)
-$("#difficultySelect").change(function() {
-  // Uporabnik lahko spremeni, vendar samo če ne igra
-  if (!isPlaying) {
-    var diff = $(this).val();
-    if (diff === "easy") {
-      ballSpeed = 1.5;
-    } else if (diff === "medium") {
-      ballSpeed = 2.5;
-    } else if (diff === "hard") {
-      ballSpeed = 3.5;
-    }
-  } else {
-    // Če je igra v teku, ga ignoriramo ali pa spet omogočimo?
-    // Mi bomo kar ignorirali spremembo:
-    $(this).val(
-      ballSpeed === 1.5 ? "easy" : ballSpeed === 2.5 ? "medium" : "hard"
-    );
-  }
-});
-
-// Ko se dokument naloži
-$(document).ready(function() {
-  // Nič posebnega, ker je medium že default v HTML
-  // ballSpeed = 2.5 (ustrezno)
 });
