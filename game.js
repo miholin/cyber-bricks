@@ -6,10 +6,6 @@
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
-// Glavna linija v ozadju
-var lineX = 0;
-var lineSpeed = 2;
-
 // Žogica
 var ballRadius = 10;
 var x, y;    // dejanske koordinate žogice (logika trkov)
@@ -51,8 +47,7 @@ var timerInterval, gameInterval;
 var isPlaying = false;
 var isPaused = false;
 
-// High score
-// Pridobimo iz localStorage, če ni, je 0
+// High score (največ točk v eni igri)
 var highScore = localStorage.getItem("highScore") || 0;
 $("#highScore").text(highScore);
 
@@ -62,7 +57,6 @@ $("#highScore").text(highScore);
 var glitchChanceBricks = 0.03;
 var glitchChanceBall   = 0.02;
 var glitchChancePaddle = 0.02;
-
 
 // ==============================
 // Inicializacija opek
@@ -216,24 +210,6 @@ function drawPaddle() {
 }
 
 // ==============================
-// Risanje premikajoče se črte
-// ==============================
-function drawMovingLine() {
-  ctx.beginPath();
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = 2;
-  ctx.moveTo(lineX, 0);
-  ctx.lineTo(lineX, canvas.height);
-  ctx.stroke();
-  ctx.closePath();
-
-  lineX += lineSpeed;
-  if (lineX > canvas.width) {
-    lineX = 0;
-  }
-}
-
-// ==============================
 // Timer
 // ==============================
 function updateTimer() {
@@ -291,7 +267,7 @@ function allBricksCleared() {
 // ==============================
 // Prehod na naslednji nivo
 // ==============================
-// ===> Zdaj NE resetiramo točk! score ostane!
+// => Score se NE resetira!
 function levelUp() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
@@ -307,7 +283,6 @@ function levelUp() {
     ballSpeed += 1;
     paddleSpeed += 1;
 
-    // Spet pokličemo init, a točk NE resetiramo
     initGameVariables();
     initBricks();
     gameInterval = setInterval(draw, 10);
@@ -318,7 +293,6 @@ function levelUp() {
 // ==============================
 // Inicializacija spremenljivk
 // ==============================
-// => Score se resetira samo, če level = 1
 function initGameVariables() {
   paddleX = (canvas.width - paddleWidth) / 2;
   x = paddleX + paddleWidth / 2;
@@ -328,8 +302,7 @@ function initGameVariables() {
   dx = randomSign * (ballSpeed * 0.6);
   dy = -ballSpeed;
 
-  // Če začnemo nov game => level je 1 => reset score
-  // Če smo v levelUp => level > 1 => ohranimo točke
+  // Obnovimo score le, če začenjamo "popolnoma na novo" (level=1)
   if (level === 1) {
     score = 0;
   }
@@ -347,7 +320,7 @@ function initGameVariables() {
 }
 
 // ==============================
-// (1) Funkcija za PODKORAKE žogice
+// Funkcija za PODKORAKE žogice
 // ==============================
 function updateBallPosition() {
   var subSteps = 3; // da ne preskakuje opek
@@ -400,7 +373,8 @@ function draw() {
 
   // Nato narišemo vse
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawMovingLine();
+  // === ODSTRANIMO risanje premikajoče se črte ===
+  // drawMovingLine(); => TE VRSTICE NI VEČ
   drawBricks();
   drawBall();
   drawPaddle();
@@ -413,11 +387,12 @@ function gameOver() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
 
-  // == Namesto primerjave, zdaj prištejemo končni score k highScore ==
-  // (Če želiš klasično 'če je večje od highscore, ga zamenja', to spremeni.)
-  highScore = parseInt(highScore) + score;
-  localStorage.setItem("highScore", highScore);
-  $("#highScore").text(highScore);
+  // == Klasični highScore => če je score > highScore, posodobi
+  // (Če želiš seštevanje, bi dal: highScore = parseInt(highScore) + score;)
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("highScore", highScore);
+  }
 
   Swal.fire({
     title: "Igra je končana!",
@@ -446,6 +421,9 @@ function gameOver() {
 
     $("#startBtn").show();
     $("#difficultySelect").attr("disabled", false);
+
+    // Osveži prikazan highScore
+    $("#highScore").text(highScore);
   });
 }
 
