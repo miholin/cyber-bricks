@@ -10,8 +10,7 @@ var ctx = canvas.getContext("2d");
 var ballRadius = 10;
 var x, y;    // dejanske koordinate žogice (logika trkov)
 var dx, dy;  // smer in hitrost
-// Izhodiščna hitrost
-var ballSpeed = 4;
+var ballSpeed; // hitrost žogice (nastavimo glede na težavnost)
 // Za glitch efekt žogice (offset pri risanju)
 var ballGlitchX = 0, ballGlitchY = 0;
 
@@ -19,7 +18,7 @@ var ballGlitchX = 0, ballGlitchY = 0;
 var paddleWidth = 75;
 var paddleHeight = 10;
 var paddleX;      // realna x koord. ploščice
-var paddleSpeed = 5; 
+var paddleSpeed;  // hitrost ploščice (nastavimo skupaj s težavnostjo)
 // Za glitch efekt ploščice
 var paddleGlitchX = 0, paddleGlitchY = 0;
 
@@ -59,6 +58,23 @@ var glitchChanceBall   = 0.02;
 var glitchChancePaddle = 0.02;
 
 // ==============================
+// Nastavitev težavnosti
+// ==============================
+function initDifficulty() {
+  // Nastavimo hitrost žogice glede na izbrano težavnost
+  var diff = $("#difficultySelect").val();
+  if (diff === "easy") {
+    ballSpeed = 3;
+  } else if (diff === "medium") {
+    ballSpeed = 5;
+  } else if (diff === "hard") {
+    ballSpeed = 8;
+  }
+  // Hitrost ploščice nastavimo fiksno ob začetku
+  paddleSpeed = 5;
+}
+
+// ==============================
 // Inicializacija opek
 // ==============================
 function initBricks() {
@@ -72,8 +88,8 @@ function initBricks() {
         y: 0,
         status: 1,
         bonus: isBonus,
-        glitchX: 0,   // glitch offset v X
-        glitchY: 0    // glitch offset v Y
+        glitchX: 0,
+        glitchY: 0
       };
     }
   }
@@ -84,11 +100,9 @@ function initBricks() {
 // ==============================
 function applyGlitch(obj, glitchChance) {
   if (Math.random() < glitchChance) {
-    // Naključen premik ±2 piksla
     obj.glitchX = (Math.random() - 0.5) * 4;
     obj.glitchY = (Math.random() - 0.5) * 4;
   } else {
-    // Možnost, da se resetira nazaj
     if (Math.random() < 0.3) {
       obj.glitchX = 0;
       obj.glitchY = 0;
@@ -104,7 +118,6 @@ function drawBricks() {
     for (var r = 0; r < brickRowCount; r++) {
       var b = bricks[c][r];
       if (b.status === 1) {
-        // Glitch za vsako opeko
         applyGlitch(b, glitchChanceBricks);
 
         var realX = brickOffsetLeft + c * (brickWidth + brickPadding);
@@ -112,22 +125,19 @@ function drawBricks() {
         var drawX = realX + b.glitchX;
         var drawY = realY + b.glitchY;
 
-        // Koordinate za kolizijo (brez glitch)
+        // Shranimo koordinati brez glitcha za kolizijo
         b.x = realX;
         b.y = realY;
 
-        // NEON STIL
         ctx.save();
         ctx.shadowColor = b.bonus ? "#001a66" : "#00fff6";
         ctx.shadowBlur = 10;
 
         var gradient = ctx.createLinearGradient(drawX, drawY, drawX + brickWidth, drawY + brickHeight);
         if (b.bonus) {
-          // Bonus brick - temna modra
           gradient.addColorStop(0, "#00114f");
           gradient.addColorStop(1, "#00072e");
         } else {
-          // Navaden gradient (cyan to blue)
           gradient.addColorStop(0, "#00f9ff");
           gradient.addColorStop(1, "#004b99");
         }
@@ -147,7 +157,6 @@ function drawBricks() {
 // Risanje žogice (bluish + glitch)
 // ==============================
 function drawBall() {
-  // Glitch
   if (Math.random() < glitchChanceBall) {
     ballGlitchX = (Math.random() - 0.5) * 4;
     ballGlitchY = (Math.random() - 0.5) * 4;
@@ -162,13 +171,11 @@ function drawBall() {
   var drawY = y + ballGlitchY;
 
   ctx.save();
-  // Neon senca tudi za žogico
   ctx.shadowColor = "#00fff6";
   ctx.shadowBlur = 10;
 
   ctx.beginPath();
   ctx.arc(drawX, drawY, ballRadius, 0, Math.PI * 2);
-  // Modrikasta barva
   ctx.fillStyle = "#00f9ff";
   ctx.fill();
   ctx.closePath();
@@ -180,7 +187,6 @@ function drawBall() {
 // Risanje ploščice (bluish + glitch)
 // ==============================
 function drawPaddle() {
-  // Glitch
   if (Math.random() < glitchChancePaddle) {
     paddleGlitchX = (Math.random() - 0.5) * 4;
     paddleGlitchY = (Math.random() - 0.5) * 4;
@@ -195,13 +201,11 @@ function drawPaddle() {
   var drawPY = canvas.height - paddleHeight + paddleGlitchY;
 
   ctx.save();
-  // Neon senca za ploščico
   ctx.shadowColor = "#00fff6";
   ctx.shadowBlur = 10;
 
   ctx.beginPath();
   ctx.rect(drawPX, drawPY, paddleWidth, paddleHeight);
-  // Modrikasta barva
   ctx.fillStyle = "#00f9ff";
   ctx.fill();
   ctx.closePath();
@@ -229,21 +233,41 @@ function collisionDetection() {
     for (var r = 0; r < brickRowCount; r++) {
       var b = bricks[c][r];
       if (b.status === 1) {
-        // Upoštevamo bounding box (ballRadius)
         if (
           x + ballRadius > b.x &&
           x - ballRadius < b.x + brickWidth &&
           y + ballRadius > b.y &&
           y - ballRadius < b.y + brickHeight
         ) {
-          dy = -dy;
+          var overlapLeft = (x + ballRadius) - b.x;
+          var overlapRight = (b.x + brickWidth) - (x - ballRadius);
+          var overlapTop = (y + ballRadius) - b.y;
+          var overlapBottom = (b.y + brickHeight) - (y - ballRadius);
+  
+          var minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+  
+          if (minOverlap === overlapLeft) {
+              x = b.x - ballRadius;
+              dx = -Math.abs(dx);
+          } else if (minOverlap === overlapRight) {
+              x = b.x + brickWidth + ballRadius;
+              dx = Math.abs(dx);
+          } else if (minOverlap === overlapTop) {
+              y = b.y - ballRadius;
+              dy = -Math.abs(dy);
+          } else if (minOverlap === overlapBottom) {
+              y = b.y + brickHeight + ballRadius;
+              dy = Math.abs(dy);
+          }
+  
           b.status = 0;
           score += b.bonus ? 5 : 1;
           $("#score").text(score);
-
+  
           if (allBricksCleared()) {
             levelUp();
           }
+          return;
         }
       }
     }
@@ -267,7 +291,6 @@ function allBricksCleared() {
 // ==============================
 // Prehod na naslednji nivo
 // ==============================
-// => Score se NE resetira!
 function levelUp() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
@@ -302,7 +325,6 @@ function initGameVariables() {
   dx = randomSign * (ballSpeed * 0.6);
   dy = -ballSpeed;
 
-  // Obnovimo score le, če začenjamo "popolnoma na novo" (level=1)
   if (level === 1) {
     score = 0;
   }
@@ -312,7 +334,6 @@ function initGameVariables() {
   $("#timer").text("00:00");
   $("#level").text(level);
 
-  // Ponastavimo glitch offsete
   ballGlitchX = 0;
   ballGlitchY = 0;
   paddleGlitchX = 0;
@@ -320,38 +341,41 @@ function initGameVariables() {
 }
 
 // ==============================
-// Funkcija za PODKORAKE žogice
+// Funkcija za podkorake žogice
 // ==============================
 function updateBallPosition() {
-  var subSteps = 3; // da ne preskakuje opek
+  var subSteps = 3; // Dodatni podkoraki za natančnejše trke
 
   for (var i = 0; i < subSteps; i++) {
     x += dx / subSteps;
     y += dy / subSteps;
 
-    // 1) Preveri trk z opekami
+    // Preverjanje trkov z opekami
     collisionDetection();
 
-    // 2) Odbijanje od stranskih robov
+    // Odbijanje od stranskih robov
     if (x + ballRadius > canvas.width || x - ballRadius < 0) {
       dx = -dx;
     }
-    // 3) Odbijanje od zgornjega roba
+    // Odbijanje od zgornjega roba
     if (y - ballRadius < 0) {
       dy = -dy;
     }
-    // 4) Preveri trk s ploščico ali game over
-    if (y + ballRadius >= canvas.height - paddleHeight) {
-      if (
-        x + ballRadius > paddleX &&
-        x - ballRadius < paddleX + paddleWidth
-      ) {
+
+    // === Preverjanje trka s ploščico ===
+    var paddleTop = canvas.height - paddleHeight;
+    if (y + ballRadius >= paddleTop) {
+      // Če se žogica nahaja nad ploščico in je horizontalno v območju ploščice
+      if (x > paddleX && x < paddleX + paddleWidth) {
+        // Postavi žogico tik nad ploščico, da se prepreči "zapletanje"
+        y = paddleTop - ballRadius;
         var deltaX = x - (paddleX + paddleWidth / 2);
-        dx = deltaX * 0.15;
-        dy = -dy;
-      } else {
+        dx = deltaX * 0.25; // Dodatni faktor, ki prilagodi horizontalni odboj
+        dy = -Math.abs(dy); // Poskrbi, da žogica vedno odbije navzgor
+      } else if (y + ballRadius >= canvas.height) {
+        // Če žogica sploh preseže dno platna
         gameOver();
-        return; // takoj končamo, da ne rišemo naprej
+        return;
       }
     }
   }
@@ -361,20 +385,16 @@ function updateBallPosition() {
 // Glavna zanka risanja
 // ==============================
 function draw() {
-  // Najprej premaknemo žogico s PODKORAKI
   updateBallPosition();
 
-  // Nato premik ploščice glede na pritisnjene tipke
+  // Premik ploščice glede na pritisnjene tipke
   if (rightPressed && paddleX < canvas.width - paddleWidth) {
     paddleX += paddleSpeed;
   } else if (leftPressed && paddleX > 0) {
     paddleX -= paddleSpeed;
   }
 
-  // Nato narišemo vse
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // === ODSTRANIMO risanje premikajoče se črte ===
-  // drawMovingLine(); => TE VRSTICE NI VEČ
   drawBricks();
   drawBall();
   drawPaddle();
@@ -387,8 +407,6 @@ function gameOver() {
   clearInterval(gameInterval);
   clearInterval(timerInterval);
 
-  // == Klasični highScore => če je score > highScore, posodobi
-  // (Če želiš seštevanje, bi dal: highScore = parseInt(highScore) + score;)
   if (score > highScore) {
     highScore = score;
     localStorage.setItem("highScore", highScore);
@@ -404,25 +422,13 @@ function gameOver() {
     level = 1;
     $("#level").text(level);
 
-    // Nastavimo ballSpeed glede na izbrano težavnost
-    var diff = $("#difficultySelect").val();
-    if (diff === "easy") {
-      ballSpeed = 3;
-    } else if (diff === "medium") {
-      ballSpeed = 5;
-    } else if (diff === "hard") {
-      ballSpeed = 8;
-    }
-    paddleSpeed = 5;
-
+    initDifficulty();
     initGameVariables();
     initBricks();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     $("#startBtn").show();
     $("#difficultySelect").attr("disabled", false);
-
-    // Osveži prikazan highScore
     $("#highScore").text(highScore);
   });
 }
@@ -449,6 +455,7 @@ $("#startBtn").click(function() {
     $(this).hide();
     $("#difficultySelect").attr("disabled", true);
 
+    initDifficulty();
     initGameVariables();
     initBricks();
 
