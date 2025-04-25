@@ -490,7 +490,8 @@ $("#infoBtn").click(function() {
   Swal.fire({
     title: "Navodila",
     html: `
-      <p>Uporabi <b>levo</b> in <b>desno</b> puščico na tipkovnici, da premikaš ploščico.<br>
+      <p>Na vrhu strani lahko izbereš težavnost: Lahko, srednje in težko.<br>
+      Uporabi <b>levo (⬅️)</b> in <b>desno (➡️)</b> puščico na tipkovnici, da premikaš ploščico.<br>
       Uniči vse opeke, da napreduješ na višji nivo!<br>
       Pazi, da žogica ne pade mimo ploščice.</p>
     `,

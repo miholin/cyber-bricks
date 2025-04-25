@@ -3,13 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Cyber Bricks</title>
-  <!-- Google Font: Orbitron -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-
-  <!-- Tvoj CSS -->
   <link rel="stylesheet" href="styles.css">
-
-  <!-- SweetAlert2 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
@@ -23,7 +18,6 @@
     Najboljši rezultat: <mark id="highScore">0</mark>
   </div>
   
-  <!-- Izbor težavnosti (onemogočen med igro) -->
   <div class="controls">
     <label for="difficultySelect">Težavnost:</label>
     <select id="difficultySelect">
@@ -35,7 +29,6 @@
 
   <canvas id="canvas" width="680px" height="500px"></canvas>
   
-  <!-- Gumbi: Ni več 'Ponastavi'; Pavza ostane, Začni se skrije med igro -->
   <div class="controls">
     <button id="startBtn">Začni igro</button>
     <button id="pauseBtn">Pavza</button>
@@ -44,11 +37,8 @@
 
   </div>
   
-  <!-- jQuery in SweetAlert2 -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-  <!-- Naš ločeni game.js -->
   <script src="game.js"></script>
 </body>
 </html>
